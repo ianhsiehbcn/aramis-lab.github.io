@@ -546,20 +546,87 @@ const Renderers = {
   MobileNav: {
     init() {
       const toggle = document.querySelector('.nav-toggle');
+      const closeBtn = document.querySelector('.nav-close');
       const nav = document.querySelector('.nav');
       if (!toggle || !nav) return;
 
-      toggle.addEventListener('click', () => {
+      let lastFocusedElement = null;
+
+      const openMenu = () => {
+        nav.classList.add('open');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+        lastFocusedElement = document.activeElement;
+        // Focus first focusable element in nav
+        const firstFocusable = nav.querySelector('.nav-link, .nav-close');
+        if (firstFocusable) firstFocusable.focus();
+      };
+
+      const closeMenu = () => {
+        nav.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        if (lastFocusedElement) lastFocusedElement.focus();
+      };
+
+      const toggleMenu = () => {
         const isOpen = nav.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', isOpen);
-      });
+        if (isOpen) {
+          openMenu();
+        } else {
+          closeMenu();
+        }
+        toggle.setAttribute('aria-expanded', nav.classList.contains('open'));
+      };
+
+      toggle.addEventListener('click', toggleMenu);
+
+      // Close button
+      const closeBtn = document.querySelector('.nav-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          closeMenu();
+        });
+      }
 
       // Close on link click
       nav.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', () => {
-          nav.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
+          closeMenu();
         });
+      });
+
+      // Close on backdrop click
+      nav.addEventListener('click', (e) => {
+        if (e.target === nav) {
+          closeMenu();
+        }
+      });
+
+      // ESC key to close
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && nav.classList.contains('open')) {
+          closeMenu();
+        }
+      });
+
+      // Focus trapping
+      nav.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' && nav.classList.contains('open')) {
+          const focusableElements = nav.querySelectorAll('.nav-link, .nav-close');
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (e.key === 'Tab') {
+            if (e.shiftKey && document.activeElement === firstElement) {
+              e.preventDefault();
+              lastElement.focus();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+              e.preventDefault();
+              firstElement.focus();
+            }
+          }
+        }
       });
     }
   }
